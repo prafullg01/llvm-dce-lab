@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCE Lab — LLVM Dead Code Elimination Platform</title>
+    <meta name="description" content="Interactive LLVM IR playground for dead code elimination — 15 categories, custom IR, benchmarking, education">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo"><span class="logo-icon">⚡</span> DCE<span class="accent">Lab</span></a>
+      <ul class="nav-links">
+        <li><a href="#pipeline">Pipeline</a></li>
+        <li><a href="#playground">Playground</a></li>
+        <li><a href="#benchmarks">Benchmarks</a></li>
+        <li><a href="#education">Learn LLVM</a></li>
+        <li><a href="#source">Source</a></li>
+      </ul>
+      <div class="mode-toggle" id="mode-toggle">
+        <button class="mode-btn active" data-mode="beginner">Beginner</button>
+        <button class="mode-btn" data-mode="advanced">Advanced</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero" class="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-particles" id="particles"></div>
+    <div class="hero-content">
+      <div class="hero-badge">LLVM Compiler Optimization Platform</div>
+      <h1 class="hero-title">Dead Code<br><span class="gradient-text">Elimination Lab</span></h1>
+      <p class="hero-subtitle">15 IR categories • Custom IR editor • Real-time analysis &amp; transformation • Benchmarking • Compiler education</p>
+      <div class="hero-stats">
+        <div class="stat-item"><span class="stat-num" data-count="15">0</span><span class="stat-label">Categories</span></div>
+        <div class="stat-item"><span class="stat-num" data-count="2">0</span><span class="stat-label">Passes</span></div>
+        <div class="stat-item"><span class="stat-num" data-count="4">0</span><span class="stat-label">Languages</span></div>
+      </div>
+      <div class="hero-btns">
+        <a href="#playground" class="hero-cta">Launch Playground <span class="cta-arrow">→</span></a>
+        <a href="#education" class="hero-cta secondary">Learn LLVM</a>
+      </div>
+    </div>
+    <div class="scroll-indicator"><span></span></div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section id="pipeline" class="section">
+    <div class="container">
+      <h2 class="section-title">How DCE <span class="gradient-text">Works</span></h2>
+      <div class="pipeline-grid">
+        <div class="pipeline-card"><div class="pipe-icon">📝</div><div class="pipe-step">Step 1</div><h3>Parse IR</h3><p>Tokenize LLVM IR into functions, basic blocks, and instructions. Build def-use chains.</p></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-card"><div class="pipe-icon">🔍</div><div class="pipe-step">Step 2</div><h3>Analysis Pass</h3><p>Check each instruction: <code>use_empty() &amp;&amp; !mayHaveSideEffects()</code></p></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-card"><div class="pipe-icon">⚡</div><div class="pipe-step">Step 3</div><h3>Transform Pass</h3><p>Fixpoint loop: remove dead code, propagate cascading deletions, repeat to convergence.</p></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-card"><div class="pipe-icon">📊</div><div class="pipe-step">Step 4</div><h3>Benchmark</h3><p>Count instructions before and after. Measure real optimization impact across all categories.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAYGROUND -->
+  <section id="playground" class="section section-dark">
+    <div class="container-wide">
+      <h2 class="section-title">Interactive <span class="gradient-text">Playground</span></h2>
+      <p class="section-desc">Select from 15 IR categories, write custom LLVM IR, or upload a .ll file.</p>
+
+      <!-- Category Bar -->
+      <div class="category-bar" id="category-bar"></div>
+
+      <!-- Controls -->
+      <div class="playground-controls">
+        <div class="control-buttons">
+          <button id="btn-analyze" class="btn btn-analyze" disabled><span class="btn-icon">🔍</span> Run Analysis</button>
+          <button id="btn-transform" class="btn btn-transform" disabled><span class="btn-icon">⚡</span> Run Transform</button>
+          <button id="btn-reset" class="btn btn-reset" disabled><span class="btn-icon">↻</span> Reset</button>
+          <label class="btn btn-upload"><span class="btn-icon">📂</span> Upload .ll<input type="file" id="file-upload" accept=".ll,.txt" hidden></label>
+          <button id="btn-export" class="btn btn-export" disabled><span class="btn-icon">💾</span> Export IR</button>
+        </div>
+        <div id="validation-msg" class="validation-msg"></div>
+      </div>
+
+      <!-- Editor + Results -->
+      <div class="playground-layout">
+        <div class="editor-panel">
+          <div class="panel-header">
+            <span class="panel-title">📝 LLVM IR Input</span>
+            <div class="panel-meta">
+              <span class="panel-badge" id="ir-line-count">0 lines</span>
+              <span class="panel-badge" id="ir-instr-count">0 instr</span>
+            </div>
+          </div>
+          <div class="editor-wrap">
+            <div class="line-numbers" id="line-numbers"></div>
+            <textarea id="ir-editor" class="ir-editor" placeholder="; Paste or write LLVM IR here, or select a category above..." spellcheck="false"></textarea>
+          </div>
+        </div>
+        <div class="results-panel">
+          <div class="panel-header">
+            <span class="panel-title">📊 Analysis Results</span>
+            <span class="panel-badge" id="analysis-status">Waiting...</span>
+          </div>
+          <div id="analysis-output" class="analysis-output">
+            <div class="placeholder-msg"><span class="placeholder-icon">🔬</span><p>Select a category and click<br><strong>"Run Analysis"</strong></p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transform Output -->
+      <div class="transform-section" id="transform-section" style="display:none">
+        <div class="panel-header">
+          <span class="panel-title">⚡ Optimized IR Output</span>
+          <div class="transform-stats">
+            <span class="t-stat"><span class="t-label">Before:</span> <span id="count-before" class="t-val">0</span></span>
+            <span class="t-stat"><span class="t-label">After:</span> <span id="count-after" class="t-val accent">0</span></span>
+            <span class="t-stat"><span class="t-label">Removed:</span> <span id="count-removed" class="t-val red">0</span></span>
+            <span class="t-stat"><span class="t-label">Rounds:</span> <span id="count-rounds" class="t-val purple">0</span></span>
+          </div>
+        </div>
+        <div id="rounds-log" class="rounds-log"></div>
+        <div class="diff-container">
+          <div class="diff-panel"><div class="diff-header">Before (Original)</div><pre class="diff-code" id="diff-before"></pre></div>
+          <div class="diff-panel"><div class="diff-header optimized">After (Optimized)</div><pre class="diff-code" id="diff-after"></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENCHMARKS -->
+  <section id="benchmarks" class="section">
+    <div class="container">
+      <h2 class="section-title">Benchmark <span class="gradient-text">Dashboard</span></h2>
+      <p class="section-desc">Run all 15 categories and compare optimization results.</p>
+      <button id="btn-run-all" class="btn btn-analyze" style="margin:0 auto 28px;display:flex"><span class="btn-icon">🚀</span> Run All Benchmarks</button>
+      <div class="bench-grid">
+        <div class="bench-card"><h3>Instruction Count (Before vs After)</h3><div class="chart-wrap"><canvas id="chart-bar"></canvas></div></div>
+        <div class="bench-card"><h3>Dead Code Distribution</h3><div class="chart-wrap"><canvas id="chart-doughnut"></canvas></div></div>
+      </div>
+      <div class="bench-table-wrap">
+        <table class="bench-table" id="bench-table">
+          <thead><tr><th>Category</th><th>Difficulty</th><th>Before</th><th>After</th><th>Removed</th><th>% Reduced</th><th>Rounds</th></tr></thead>
+          <tbody id="bench-tbody"></tbody>
+          <tfoot id="bench-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDUCATION -->
+  <section id="education" class="section section-dark">
+    <div class="container">
+      <h2 class="section-title">Learn <span class="gradient-text">LLVM</span></h2>
+      <p class="section-desc">Everything you need to understand LLVM IR and dead code elimination.</p>
+      <div class="edu-tabs">
+        <button class="edu-tab active" data-edu="what-llvm">What is LLVM?</button>
+        <button class="edu-tab" data-edu="llvm-ir">LLVM IR</button>
+        <button class="edu-tab" data-edu="ssa">SSA Form</button>
+        <button class="edu-tab" data-edu="dce">DCE Pass</button>
+        <button class="edu-tab" data-edu="side-effects">Side Effects</button>
+        <button class="edu-tab" data-edu="pipeline">Pass Pipeline</button>
+      </div>
+      <div class="edu-panels">
+        <div class="edu-panel active" id="edu-what-llvm">
+          <h3>What is LLVM?</h3>
+          <p>LLVM (Low Level Virtual Machine) is a collection of modular and reusable compiler and toolchain technologies. It provides a modern, SSA-based compilation strategy capable of supporting both static and dynamic compilation of arbitrary programming languages.</p>
+          <div class="edu-flow">
+            <span class="flow-box">Source Code<br><small>C / C++ / Rust</small></span><span class="flow-arrow">→</span>
+            <span class="flow-box highlight">LLVM IR<br><small>Intermediate</small></span><span class="flow-arrow">→</span>
+            <span class="flow-box highlight">Passes<br><small>Optimize</small></span><span class="flow-arrow">→</span>
+            <span class="flow-box">Machine Code<br><small>x86 / ARM</small></span>
+          </div>
+          <p>The key insight: by using a <strong>common intermediate representation (IR)</strong>, LLVM can support many source languages and target architectures while sharing the same optimization passes.</p>
+        </div>
+        <div class="edu-panel" id="edu-llvm-ir">
+          <h3>LLVM IR — The Language of Optimization</h3>
+          <p>LLVM IR is a typed, SSA-based intermediate representation. Every value is assigned exactly once, and every instruction produces a named result.</p>
+          <pre class="edu-code">define i32 @add(i32 %a, i32 %b) {
+entry:
+  %sum = add i32 %a, %b
+  ret i32 %sum
+}</pre>
+          <div class="edu-grid-sm">
+            <div class="edu-mini-card"><h4>Types</h4><p><code>i1, i8, i32, i64, float, double, ptr</code></p></div>
+            <div class="edu-mini-card"><h4>Values</h4><p><code>%name</code> = local, <code>@name</code> = global</p></div>
+            <div class="edu-mini-card"><h4>Basic Blocks</h4><p>Sequence of instructions ending with a terminator</p></div>
+            <div class="edu-mini-card"><h4>Functions</h4><p><code>define ret_type @name(params)</code></p></div>
+          </div>
+        </div>
+        <div class="edu-panel" id="edu-ssa">
+          <h3>SSA Form — Static Single Assignment</h3>
+          <p>In SSA form, every variable is assigned exactly once. This makes def-use chains trivial to compute — each value has exactly one definition and a list of all instructions that use it.</p>
+          <pre class="edu-code">%a = add i32 %x, 1      ; %a defined exactly once
+%b = mul i32 %a, 2      ; %a used here
+%c = add i32 %a, %b     ; %a used again</pre>
+          <p>PHI nodes handle values from different control flow paths:</p>
+          <pre class="edu-code">%result = phi i32 [ %a, %left ], [ %b, %right ]
+; Value is %a if from %left, %b if from %right</pre>
+        </div>
+        <div class="edu-panel" id="edu-dce">
+          <h3>Dead Code Elimination</h3>
+          <p>An instruction is <strong>dead</strong> if its result is never used AND it has no side effects.</p>
+          <pre class="edu-code">bool isDeadInstruction(Instruction &I) {
+    if (!I.use_empty())         return false; // has users → LIVE
+    if (I.isTerminator())       return false; // control flow → LIVE
+    if (I.mayHaveSideEffects()) return false; // side effects → PROTECTED
+    return true;                               // → DEAD
+}</pre>
+          <div class="edu-grid-sm">
+            <div class="edu-mini-card safe"><h4>✅ Safe to Remove</h4><p>add, sub, mul, icmp, zext, trunc, getelementptr, select, phi (if unused)</p></div>
+            <div class="edu-mini-card danger"><h4>❌ Never Remove</h4><p>store, call, invoke, fence, atomicrmw, volatile, landingpad, terminators</p></div>
+          </div>
+        </div>
+        <div class="edu-panel" id="edu-side-effects">
+          <h3>Why Some Instructions Can't Be Removed</h3>
+          <div class="edu-cards-grid">
+            <div class="edu-card-sm danger"><div class="edu-card-icon">💾</div><h4>store</h4><p>Modifies memory visible to other code, threads, or hardware</p></div>
+            <div class="edu-card-sm danger"><div class="edu-card-icon">📞</div><h4>call / invoke</h4><p>May perform I/O, throw exceptions, modify global state</p></div>
+            <div class="edu-card-sm danger"><div class="edu-card-icon">🔒</div><h4>fence</h4><p>Enforces memory ordering for concurrent programs</p></div>
+            <div class="edu-card-sm danger"><div class="edu-card-icon">⚛️</div><h4>atomicrmw</h4><p>Atomic operations for lock-free synchronization</p></div>
+            <div class="edu-card-sm danger"><div class="edu-card-icon">⚡</div><h4>volatile</h4><p>Hardware-mapped I/O — reads/writes trigger physical effects</p></div>
+            <div class="edu-card-sm danger"><div class="edu-card-icon">🛑</div><h4>landingpad</h4><p>Exception handling entry point — part of unwind table</p></div>
+          </div>
+        </div>
+        <div class="edu-panel" id="edu-pipeline">
+          <h3>LLVM Pass Pipeline</h3>
+          <p>LLVM organizes optimizations as <strong>passes</strong>. This project implements two:</p>
+          <div class="edu-flow">
+            <span class="flow-box">Frontend<br><small>clang</small></span><span class="flow-arrow">→</span>
+            <span class="flow-box">Unoptimized IR</span><span class="flow-arrow">→</span>
+            <span class="flow-box highlight">Analysis Pass<br><small>Find dead code</small></span><span class="flow-arrow">→</span>
+            <span class="flow-box highlight">Transform Pass<br><small>Remove dead code</small></span><span class="flow-arrow">→</span>
+            <span class="flow-box">Backend<br><small>Machine code</small></span>
+          </div>
+          <pre class="edu-code">opt -load-pass-plugin=./DeadCodeElimination.so \
+    -passes="dead-code-transform" input.ll -S -o output.ll</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOURCE CODE -->
+  <section id="source" class="section">
+    <div class="container">
+      <h2 class="section-title">Pass <span class="gradient-text">Source Code</span></h2>
+      <div class="source-tabs">
+        <button class="src-tab active" data-src="analysis">DeadCodeAnalysis.cpp</button>
+        <button class="src-tab" data-src="transform">DeadCodeTransform.cpp</button>
+        <button class="src-tab" data-src="plugin">PassPlugin.cpp</button>
+      </div>
+      <div class="source-panels">
+        <pre class="source-panel active" id="src-analysis"><code id="src-code-analysis"></code></pre>
+        <pre class="source-panel" id="src-transform"><code id="src-code-transform"></code></pre>
+        <pre class="source-panel" id="src-plugin"><code id="src-code-plugin"></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand"><span class="logo-icon">⚡</span> DCE<span class="accent">Lab</span></div>
+        <p class="footer-text">LLVM Dead Code Elimination — Analysis &amp; Transformation Platform</p>
+        <p class="footer-copy">&copy; 2026 Compiler Optimization Project • 15 Categories • Multi-Pass Fixpoint Elimination</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/test-programs.js"></script>
+  <script src="js/ir-parser.js"></script>
+  <script src="js/dce-engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
